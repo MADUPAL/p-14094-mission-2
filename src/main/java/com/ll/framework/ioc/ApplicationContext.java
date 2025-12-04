@@ -3,6 +3,7 @@ package com.ll.framework.ioc;
 import com.ll.framework.ioc.annotations.Component;
 
 import java.io.File;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
@@ -85,7 +86,7 @@ public class ApplicationContext {
                     //인터페이스, 추상메서드, @Component 안붙어있는애는 패스
                     if (clazz.isInterface() ||
                             Modifier.isAbstract(clazz.getModifiers()) ||
-                            clazz.isAnnotationPresent(Component.class)) {
+                            !componentExist(clazz)) {
                         continue;
                     }
 
@@ -164,5 +165,24 @@ public class ApplicationContext {
 
     public void registerBean(String name, Class<?> clazz) {
         beanDefinitionMap.put(name, new BeanDefinition(clazz));
+    }
+
+    private boolean componentExist(Class<?> clazz) {
+        // 직접 @Component가 붙은 경우
+        if (clazz.isAnnotationPresent(Component.class)) {
+            return true;
+        }
+
+        // 다른 어노테이션이 붙었는데,
+        // 그 어노테이션 타입에 @Component가 붙어있는 경우
+        // (@Service, @Repository, @Configuration 등)
+        for (Annotation annotation : clazz.getAnnotations()) {
+            Class<? extends Annotation> annoType = annotation.annotationType();
+            if (annoType.isAnnotationPresent(Component.class)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
