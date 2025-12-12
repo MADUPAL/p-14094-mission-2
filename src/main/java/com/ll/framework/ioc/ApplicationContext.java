@@ -12,9 +12,10 @@ import java.util.*;
 
 public class ApplicationContext {
 
-    private String basePackage;
-    Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
-    Map<String, Object> singletonObjects = new HashMap<>();
+    private final String basePackage;
+    private final Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
+    private final Map<String, Object> singletonObjects = new HashMap<>();
+    private final List<Class<?>> configClasses = new ArrayList<>();
 
     public ApplicationContext(String basePackage) {
         this.basePackage = basePackage;
@@ -92,7 +93,7 @@ public class ApplicationContext {
 
                     //MyShopRepository -> myShopRepository
                     String simpleName = clazz.getSimpleName();
-                    String beanName = Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
+                    String beanName = decapitalize(simpleName);
 
                     registerBean(beanName, clazz);
                 } catch (ClassNotFoundException e) {
@@ -153,20 +154,30 @@ public class ApplicationContext {
         }
     }
 
+    public void registerBean(String name, Class<?> clazz) {
+        beanDefinitionMap.put(name, new BeanDefinition(clazz));
+    }
+
     /**
      * 클래스 맨 앞 글자만 소문자로 바꾼걸 기준으로 genBean
      */
     private Object resolveDependency(Class<?> type) {
         String simpleName = type.getSimpleName();
-        String defaultBeanName = Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
+        String defaultBeanName = decapitalize(simpleName);
 
         return genBean(defaultBeanName);
     }
 
-    public void registerBean(String name, Class<?> clazz) {
-        beanDefinitionMap.put(name, new BeanDefinition(clazz));
+    /**
+     * 클래스 맨 앞 글자만 소문자로 바꾸는 함수
+     */
+    private static String decapitalize(String name) {
+        return Character.toLowerCase(name.charAt(0)) + name.substring(1);
     }
 
+    /**
+     * 클래스의 어노테이션 중에 @Component가 있는지 알려주는 함수
+     */
     private boolean componentExist(Class<?> clazz) {
         // 직접 @Component가 붙은 경우
         if (clazz.isAnnotationPresent(Component.class)) {
